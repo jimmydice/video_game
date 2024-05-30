@@ -1,7 +1,6 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 import random
-import os
 
 # Define the questions
 questions = [
@@ -25,14 +24,13 @@ game_covers = {
     "Gears of War": "covers/gears_of_war.jpg",
     "Splinter Cell": "covers/splinter_cell.jpg",
     "Quake 3 Arena": "covers/quake_3_arena.jpg",
-    "Elder Scrolls: Oblivion": "covers/oblivion.jpg",
-    "Elder Scrolls: Morrowind": "covers/morrowind.jpg",
+    "Elder Scrolls: Skyrim": "covers/skyrim.jpg",
     "Elden Ring": "covers/elden_ring.jpg",
     "Grand Theft Auto 4": "covers/gta_4.jpg",
     "Warcraft 3": "covers/warcraft_3.jpg",
-    "Sims 2": "covers/sims_2.jpg",
     "Max Payne 1+2": "covers/max_payne.jpg",
     "Doom 3": "covers/doom_3.jpg",
+    "Doom 2": "covers/doom_2.jpg",
     "Last of Us": "covers/last_of_us.jpg",
     "Uncharted 4": "covers/uncharted_4.jpg",
     "Grand Theft Auto: San Andreas": "covers/gta_san_andreas.jpg"
@@ -43,12 +41,15 @@ class GameApp:
         self.root = root
         self.root.title("Game Selector")
         
-        self.selected_question = random.choice(questions)
+        self.questions = questions[:]
+        random.shuffle(self.questions)
+        self.current_question_index = 0
+        
         self.favorite_games = list(game_covers.keys())
         self.selected_games = random.sample(self.favorite_games, 12)
         self.game_votes = {game: 0 for game in self.selected_games}
 
-        self.question_label = tk.Label(root, text=self.selected_question, font=("Helvetica", 14))
+        self.question_label = tk.Label(root, text=self.questions[self.current_question_index], font=("Helvetica", 14))
         self.question_label.pack(pady=20)
 
         self.button_frame = tk.Frame(root)
@@ -64,7 +65,7 @@ class GameApp:
 
     def load_image(self, path):
         image = Image.open(path)
-        image = image.resize((300, 300), Image.ANTIALIAS)
+        image = image.resize((300, 300), Image.Resampling.LANCZOS)
         return ImageTk.PhotoImage(image)
 
     def choose_left(self):
@@ -81,6 +82,8 @@ class GameApp:
         elif choice == 'B':
             self.selected_games.remove(game_a)
             self.game_votes[game_b] += 1
+        self.current_question_index = (self.current_question_index + 1) % len(self.questions)
+        self.question_label.config(text=self.questions[self.current_question_index])
         self.update_buttons()
 
     def update_buttons(self):
@@ -96,15 +99,19 @@ class GameApp:
     def display_results(self):
         self.game_votes[self.selected_games[0]] += 1
         sorted_games = sorted(self.game_votes.items(), key=lambda x: x[1], reverse=True)
-        top_3_games = sorted_games[:3]
+        winner = sorted_games[0][0]
 
-        result_text = "The top 3 games are:\n"
-        for i, (game, votes) in enumerate(top_3_games, start=1):
-            result_text += f"{i}. {game} with {votes} votes\n"
-
+        result_text = f"The winning game is:\n{winner} with {self.game_votes[winner]} votes"
+        
         self.question_label.config(text=result_text)
         self.left_button.pack_forget()
         self.right_button.pack_forget()
+
+        # Show the cover of the winning game
+        winner_image = self.load_image(game_covers[winner])
+        self.winner_label = tk.Label(self.root, image=winner_image)
+        self.winner_label.image = winner_image  # Keep a reference to avoid garbage collection
+        self.winner_label.pack(pady=20)
 
 if __name__ == "__main__":
     root = tk.Tk()
